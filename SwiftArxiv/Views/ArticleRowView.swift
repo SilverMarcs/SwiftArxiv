@@ -17,13 +17,23 @@ struct ArticleRowView: View {
         savedArticles.contains { $0.id == article.id }
     }
     
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(article.title)
-                .font(.headline)
-                .lineLimit(2)
+    private var categoryIcon: ArticleCategory {
+        if let primaryCategory = article.primaryCategory {
+            return ArticleCategory(from: primaryCategory)
         }
-        .padding(.vertical, 4)
+        return .other
+    }
+    
+    var body: some View {
+        Label {
+            Text(article.title)
+                .font(.body)
+                .lineLimit(2)
+        } icon: {
+            Image(systemName: categoryIcon.iconName)
+                .foregroundStyle(categoryIcon.color)
+                
+        }
         .swipeActions(edge: .leading) {
             if !isArticleSaved {
                 Button {

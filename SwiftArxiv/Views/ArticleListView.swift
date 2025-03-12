@@ -36,6 +36,8 @@ struct ArticleListView: View {
                     ForEach(searchedArticles, id: \.self) { article in
                         ArticleRowView(article: article)
                     }
+//                    .listRowSeparator(.visible)
+//                    .listRowSeparatorTint(.gray.opacity(0.1))
                 }
             } else {
                 if savedArticles.isEmpty {
