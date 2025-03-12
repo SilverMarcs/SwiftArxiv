@@ -29,9 +29,7 @@ struct ArticleListView: View {
                         Spacer()
                     }
                 } else if searchedArticles.isEmpty {
-                    ContentUnavailableView {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
+                    ContentUnavailableView.search
                 } else {
                     ForEach(searchedArticles, id: \.self) { article in
                         ArticleRowView(article: article)
