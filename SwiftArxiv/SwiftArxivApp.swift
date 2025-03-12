@@ -28,5 +28,9 @@ struct SwiftArxivApp: App {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+        
+        Settings {
+            SettingsView()
+        }
     }
 }

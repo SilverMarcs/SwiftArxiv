@@ -14,6 +14,12 @@ struct ArticleDetailView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var alertTitle = ""
+    @State private var isSummarizing = false
+    @State private var showingSummary = false
+    @State private var summary = ""
+    
+    private let summarizeService = SummarizeService()
+    private let pdfHandler = PDFHandlerService()
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -129,146 +135,101 @@ struct ArticleDetailView: View {
                 .padding()
             }
             .toolbar {
-                if let pdfUrl = article.pdfUrl {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        if let htmlUrl = article.htmlUrl {
-                            Link(destination: htmlUrl) {
-                                Label("Web", systemImage: "safari")
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(.blue)
+                ArticleToolbar(
+                    article: article,
+                    isDownloadingPDF: $isDownloadingPDF,
+                    isOpeningInPreview: $isOpeningInPreview,
+                    isSummarizing: $isSummarizing,
+                    onSummarize: {
+                        if let pdfUrl = article.pdfUrl {
+                            await summarizePDF(from: pdfUrl)
                         }
-                        
-                        Group {
-                            Button {
-                                downloadPDFToDownloads(from: pdfUrl)
-                            } label: {
-                                if isDownloadingPDF {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                } else {
-                                    Label("Download", systemImage: "arrow.down.circle")
-                                }
-                            }
-                            .disabled(isDownloadingPDF)
-
-                            Button {
-                                downloadAndOpenPDF(from: pdfUrl)
-                            } label: {
-                                Label(isOpeningInPreview ? "Opening..." : "Open in Preview", systemImage: "doc.text.fill")
-                                    .labelStyle(.titleOnly)
-                            }
-                            .disabled(isOpeningInPreview)
+                    },
+                    onDownload: {
+                        if let pdfUrl = article.pdfUrl {
+                            downloadPDFToDownloads(from: pdfUrl)
                         }
-                        
-                        // NavigationLink {
-                        //     PDFViewerView(url: pdfUrl)
-                        //         .navigationTitle("PDF Preview")
-                        //         .toolbarTitleDisplayMode(.inline)
-                        // } label: {
-                        //     Image(systemName: "eye.fill")
-                        // }
-                        // .help("Preview PDF")
+                    },
+                    onOpenInPreview: {
+                        if let pdfUrl = article.pdfUrl {
+                            downloadAndOpenPDF(from: pdfUrl)
+                        }
+                    }
+                )
+            }
+            .navigationTitle(article.title)
+            .background(.background)
+            .scrollContentBackground(.visible)
+            .alert(alertTitle, isPresented: $showingAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(alertMessage)
+            }
+            .sheet(isPresented: $showingSummary) {
+                NavigationStack {
+                    ScrollView {
+                        Text(summary)
+                            .textSelection(.enabled)
+                            .padding()
+                    }
+                    .navigationTitle("Summary")
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                showingSummary = false
+                            }
+                        }
                     }
                 }
             }
         }
-        .navigationTitle(article.title)
-        .background(.background)
-        .scrollContentBackground(.visible)
-        .alert(alertTitle, isPresented: $showingAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(alertMessage)
-        }
     }
     
-    private func sanitizeFilename(_ filename: String) -> String {
-        // Replace characters that are problematic in filenames
-        let invalidCharacters = CharacterSet(charactersIn: ":/\\?%*|\"<>")
-        return filename.components(separatedBy: invalidCharacters)
-            .joined(separator: "")
-            .trimmingCharacters(in: .whitespaces)
-    }
-    
-    private func getUniqueFilename(baseURL: URL, filename: String, extension: String) -> URL {
-        var finalURL = baseURL.appendingPathComponent(filename).appendingPathExtension(`extension`)
-        var counter = 1
+    private func summarizePDF(from url: URL) async {
+        isSummarizing = true
         
-        while FileManager.default.fileExists(atPath: finalURL.path) {
-            let newFilename = "\(filename) (\(counter))"
-            finalURL = baseURL.appendingPathComponent(newFilename).appendingPathExtension(`extension`)
-            counter += 1
+        do {
+            let pdfText = try await summarizeService.extractTextFromPDF(at: url)
+            summary = try await summarizeService.summarize(pdfText: pdfText)
+            showingSummary = true
+        } catch {
+            alertTitle = "Summarization Failed"
+            alertMessage = error.localizedDescription
+            showingAlert = true
         }
         
-        return finalURL
+        isSummarizing = false
     }
     
     private func downloadPDFToDownloads(from url: URL) {
         isDownloadingPDF = true
         
-        // Get Downloads directory
-        let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
-        let sanitizedTitle = sanitizeFilename(article.title)
-        let destination = getUniqueFilename(baseURL: downloadsURL, filename: sanitizedTitle, extension: "pdf")
-        
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            DispatchQueue.main.async {
-                self.isDownloadingPDF = false
-                
-                if let error = error {
-                    self.alertTitle = "Download Failed"
-                    self.alertMessage = error.localizedDescription
-                    self.showingAlert = true
-                    return
-                }
-                
-                if let data = data {
-                    do {
-                        try data.write(to: destination)
-                        self.alertTitle = "Download Complete"
-                        self.alertMessage = "PDF has been saved to Downloads folder"
-                        self.showingAlert = true
-                    } catch {
-                        self.alertTitle = "Save Failed"
-                        self.alertMessage = error.localizedDescription
-                        self.showingAlert = true
-                    }
-                }
+        Task {
+            do {
+                try await pdfHandler.downloadPDFToDownloads(from: url, title: article.title)
+                alertTitle = "Download Complete"
+                alertMessage = "PDF has been saved to Downloads folder"
+            } catch {
+                alertTitle = "Download Failed"
+                alertMessage = error.localizedDescription
             }
-        }.resume()
+            showingAlert = true
+            isDownloadingPDF = false
+        }
     }
     
     private func downloadAndOpenPDF(from url: URL) {
         isOpeningInPreview = true
         
-        let sanitizedTitle = sanitizeFilename(article.title)
-        let destination = FileManager.default.temporaryDirectory
-            .appendingPathComponent(sanitizedTitle)
-            .appendingPathExtension("pdf")
-        
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            DispatchQueue.main.async {
-                self.isOpeningInPreview = false
-                
-                if let error = error {
-                    self.alertTitle = "Download Failed"
-                    self.alertMessage = error.localizedDescription
-                    self.showingAlert = true
-                    return
-                }
-                
-                if let data = data {
-                    do {
-                        try data.write(to: destination)
-                        NSWorkspace.shared.open(destination)
-                    } catch {
-                        self.alertTitle = "Save Failed"
-                        self.alertMessage = error.localizedDescription
-                        self.showingAlert = true
-                    }
-                }
+        Task {
+            do {
+                try await pdfHandler.downloadAndOpenPDF(from: url, title: article.title)
+            } catch {
+                alertTitle = "Failed to Open PDF"
+                alertMessage = error.localizedDescription
+                showingAlert = true
             }
-        }.resume()
+            isOpeningInPreview = false
+        }
     }
 }
