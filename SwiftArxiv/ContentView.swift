@@ -10,7 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @State private var model = ArxivSearchModel()
-    @State private var mode: ArticleListMode = .search
+    @State private var mode: ArticleListMode = .saved
     
     var body: some View {
         NavigationSplitView {
@@ -35,6 +35,7 @@ struct ContentView: View {
         .background(.background)
         .searchable(text: $model.searchQuery, placement: .sidebar, prompt: "Search arXiv papers")
         .onSubmit(of: .search) {
+            mode = .search
             Task {
                 await model.searchArticles()
             }
