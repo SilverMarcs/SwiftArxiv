@@ -31,7 +31,7 @@ struct ArticleListCards: View {
                 icon: "magnifyingglass.circle.fill",
                 iconColor: .blue,
                 title: "Search",
-                count: mode == .search ? "" : "") {
+                count: mode == .search ? "✓" : "") {
                     mode = .search
                 }
             
@@ -39,7 +39,7 @@ struct ArticleListCards: View {
                 icon: "bookmark.circle.fill",
                 iconColor: .indigo,
                 title: "Saved",
-                count: "\(savedArticles.count)") {
+                count: mode == .saved ? "✓" : "") {
                     mode = .saved
                 }
         }

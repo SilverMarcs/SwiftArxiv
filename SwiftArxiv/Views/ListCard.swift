@@ -35,9 +35,9 @@ struct ListCard: View {
                     Spacer()
                     
                     Text(count)
-                        .contentTransition(.numericText())
+//                        .contentTransition(.numericText())
                         .font(.title2)
-                        .fontWeight(.semibold)
+//                        .fontWeight(.semibold)
 //                        .monospaced()
                 }
                 Text(title)
