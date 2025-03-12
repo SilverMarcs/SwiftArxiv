@@ -7,21 +7,23 @@
 
 import Foundation
 import FeedKit
+import SwiftData
 
-struct Article: Identifiable, Hashable, Equatable {
-    let id: String
-    let title: String
-    let abstract: String?
-    let authors: [String]
-    let published: Date?
-    let updated: Date?
-    let categories: [String]
-    let primaryCategory: String?
-    let pdfUrl: URL?
-    let htmlUrl: URL?
-    let doiUrl: URL?
-    let journalRef: String?
-    let comment: String?
+@Model
+class Article {
+    var id: String
+    var title: String
+    var abstract: String?
+    var authors: [String]
+    var published: Date?
+    var updated: Date?
+    var categories: [String]
+    var primaryCategory: String?
+    var pdfUrl: URL?
+    var htmlUrl: URL?
+    var doiUrl: URL?
+    var journalRef: String?
+    var comment: String?
     
     init(from entry: AtomFeedEntry) {
         self.id = entry.id ?? UUID().uuidString

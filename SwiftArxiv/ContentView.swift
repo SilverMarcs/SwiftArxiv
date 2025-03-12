@@ -10,25 +10,36 @@ import SwiftData
 
 struct ContentView: View {
     @State private var model = ArxivSearchModel()
+    @State private var mode: ArticleListMode = .search
+    @Query private var savedArticles: [Article]
     
     var body: some View {
         NavigationSplitView {
             List(selection: $model.selectedArticle) {
-                if model.isLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                            .controlSize(.large)
-                            .padding()
-                        Spacer()
+                ArticleListCards(mode: $mode)
+                
+                if mode == .search {
+                    if model.isLoading {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .controlSize(.large)
+                                .padding()
+                            Spacer()
+                        }
+                    } else {
+                        ForEach(model.articles, id: \.self) { article in
+                            ArticleRowView(article: article)
+                        }
                     }
                 } else {
-                    ForEach(model.articles, id: \.self) { article in
+                    ForEach(savedArticles, id: \.self) { article in
                         ArticleRowView(article: article)
                     }
                 }
             }
-            .navigationTitle("arXiv Search")
+            .navigationTitle(mode == .search ? "Search" : "Saved")
+            
         } detail: {
             if let selectedArticle = model.selectedArticle {
                 ArticleDetailView(article: selectedArticle)
