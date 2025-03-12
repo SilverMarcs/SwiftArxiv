@@ -168,7 +168,7 @@ struct ArticleDetailView: View {
             .sheet(isPresented: $showingSummary) {
                 NavigationStack {
                     ScrollView {
-                        Text(summary)
+                        MarkdownView(text: summary)
                             .textSelection(.enabled)
                             .padding()
                     }
