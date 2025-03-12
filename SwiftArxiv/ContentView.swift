@@ -11,35 +11,15 @@ import SwiftData
 struct ContentView: View {
     @State private var model = ArxivSearchModel()
     @State private var mode: ArticleListMode = .search
-    @Query private var savedArticles: [Article]
     
     var body: some View {
         NavigationSplitView {
-            List(selection: $model.selectedArticle) {
-                ArticleListCards(mode: $mode)
-                
-                if mode == .search {
-                    if model.isLoading {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                                .controlSize(.large)
-                                .padding()
-                            Spacer()
-                        }
-                    } else {
-                        ForEach(model.articles, id: \.self) { article in
-                            ArticleRowView(article: article)
-                        }
-                    }
-                } else {
-                    ForEach(savedArticles, id: \.self) { article in
-                        ArticleRowView(article: article)
-                    }
-                }
-            }
-            .navigationTitle(mode == .search ? "Search" : "Saved")
-            
+            ArticleListView(
+                mode: $mode,
+                selectedArticle: $model.selectedArticle,
+                searchedArticles: model.articles,
+                isLoading: model.isLoading
+            )
         } detail: {
             if let selectedArticle = model.selectedArticle {
                 ArticleDetailView(article: selectedArticle)
@@ -60,10 +40,9 @@ struct ContentView: View {
             }
         }
         .alert("Error", isPresented: .init(
-                get: { model.errorMessage != nil},
-                set: { if !$0 { model.errorMessage = nil } }
-            )
-        ) {
+            get: { model.errorMessage != nil},
+            set: { if !$0 { model.errorMessage = nil } }
+        )) {
             Button("OK") {
                 model.errorMessage = nil
             }
@@ -74,7 +53,6 @@ struct ContentView: View {
         }
     }
 }
-
 
 #Preview {
     ContentView()
