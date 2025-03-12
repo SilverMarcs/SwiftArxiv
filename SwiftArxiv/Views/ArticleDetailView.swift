@@ -10,6 +10,7 @@ import SwiftUI
 struct ArticleDetailView: View {
     let article: Article
     @State private var isDownloadingPDF = false
+    @State private var isOpeningInPreview = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var alertTitle = ""
@@ -25,43 +26,17 @@ struct ArticleDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Title and Actions
-                    Group {
-                        Text(article.title)
-                            .font(.title)
-                            .fontWeight(.bold)
-                        
-                        // Action buttons (non-PDF ones)
-                        HStack(spacing: 12) {
-                            if let htmlUrl = article.htmlUrl {
-                                Link(destination: htmlUrl) {
-                                    Label("Web", systemImage: "safari.fill")
-                                }
-                                .buttonStyle(.bordered)
-                                .tint(.blue)
-                            }
-                            
-                            if let doiUrl = article.doiUrl {
-                                Link(destination: doiUrl) {
-                                    Label("DOI", systemImage: "link")
-                                }
-                                .buttonStyle(.bordered)
-                                .tint(.green)
-                            }
-                        }
-                    }
-                    
-                    Divider()
-                    
                     // Abstract
                     if let abstract = article.abstract {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Abstract", systemImage: "text.justify")
-                                .font(.headline)
-                                .foregroundColor(.blue)
+                                .font(.title3)
+                                .bold()
+                                .foregroundStyle(.blue)
                             Text(abstract)
-                                .font(.body)
+                                .textSelection(.enabled)
                         }
+                        
                         Divider()
                     }
                     
@@ -69,11 +44,12 @@ struct ArticleDetailView: View {
                     if !article.authors.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Authors", systemImage: "person.2")
-                                .font(.headline)
-                                .foregroundColor(.blue)
+                                .font(.title3)
+                                .bold()
+                                .foregroundStyle(.orange)
                             Text(article.authors.joined(separator: ", "))
-                                .font(.body)
                         }
+                        
                         Divider()
                     }
                     
@@ -106,8 +82,9 @@ struct ArticleDetailView: View {
                     if !article.categories.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Categories", systemImage: "tag")
-                                .font(.headline)
-                                .foregroundColor(.blue)
+                                .font(.title3)
+                                .bold()
+                                .foregroundStyle(.green)
                             
                             HStack {
                                 ForEach(article.categories, id: \.self) { category in
@@ -154,20 +131,15 @@ struct ArticleDetailView: View {
             .toolbar {
                 if let pdfUrl = article.pdfUrl {
                     ToolbarItemGroup(placement: .primaryAction) {
-                        Group {
-                            Button {
-                                downloadAndOpenPDF(from: pdfUrl)
-                            } label: {
-                                if isDownloadingPDF {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                } else {
-                                    Label("Open in Preview", systemImage: "doc.text.fill")
-                                        .labelStyle(.titleOnly)
-                                }
+                        if let htmlUrl = article.htmlUrl {
+                            Link(destination: htmlUrl) {
+                                Label("Web", systemImage: "safari")
                             }
-                            .disabled(isDownloadingPDF)
-                            
+                            .buttonStyle(.bordered)
+                            .tint(.blue)
+                        }
+                        
+                        Group {
                             Button {
                                 downloadPDFToDownloads(from: pdfUrl)
                             } label: {
@@ -179,20 +151,29 @@ struct ArticleDetailView: View {
                                 }
                             }
                             .disabled(isDownloadingPDF)
+
+                            Button {
+                                downloadAndOpenPDF(from: pdfUrl)
+                            } label: {
+                                Label(isOpeningInPreview ? "Opening..." : "Open in Preview", systemImage: "doc.text.fill")
+                                    .labelStyle(.titleOnly)
+                            }
+                            .disabled(isOpeningInPreview)
                         }
                         
-                        NavigationLink {
-                            PDFViewerView(url: pdfUrl)
-                                .navigationTitle("PDF Preview")
-                                .toolbarTitleDisplayMode(.inline)
-                        } label: {
-                            Image(systemName: "eye.fill")
-                        }
-                        .help("Preview PDF")
+                        // NavigationLink {
+                        //     PDFViewerView(url: pdfUrl)
+                        //         .navigationTitle("PDF Preview")
+                        //         .toolbarTitleDisplayMode(.inline)
+                        // } label: {
+                        //     Image(systemName: "eye.fill")
+                        // }
+                        // .help("Preview PDF")
                     }
                 }
             }
         }
+        .navigationTitle(article.title)
         .background(.background)
         .scrollContentBackground(.visible)
         .alert(alertTitle, isPresented: $showingAlert) {
@@ -206,7 +187,7 @@ struct ArticleDetailView: View {
         // Replace characters that are problematic in filenames
         let invalidCharacters = CharacterSet(charactersIn: ":/\\?%*|\"<>")
         return filename.components(separatedBy: invalidCharacters)
-            .joined(separator: "-")
+            .joined(separator: "")
             .trimmingCharacters(in: .whitespaces)
     }
     
@@ -259,7 +240,7 @@ struct ArticleDetailView: View {
     }
     
     private func downloadAndOpenPDF(from url: URL) {
-        isDownloadingPDF = true
+        isOpeningInPreview = true
         
         let sanitizedTitle = sanitizeFilename(article.title)
         let destination = FileManager.default.temporaryDirectory
@@ -268,7 +249,7 @@ struct ArticleDetailView: View {
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             DispatchQueue.main.async {
-                self.isDownloadingPDF = false
+                self.isOpeningInPreview = false
                 
                 if let error = error {
                     self.alertTitle = "Download Failed"
