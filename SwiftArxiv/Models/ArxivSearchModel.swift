@@ -27,7 +27,7 @@ class ArxivSearchModel {
             .addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)?
             .replacingOccurrences(of: "%20", with: "+") ?? ""
         
-        guard let apiURL = URL(string: "http://export.arxiv.org/api/query?search_query=ti:\(formattedQuery)&sortBy=relevance&max_results=100") else {
+        guard let apiURL = URL(string: "http://export.arxiv.org/api/query?search_query=ti:\(formattedQuery)&sortBy=relevance&max_results=20") else {
             errorMessage = "Invalid URL"
             isLoading = false
             return

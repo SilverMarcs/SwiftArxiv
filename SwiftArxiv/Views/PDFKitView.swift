@@ -12,12 +12,14 @@ struct PDFKitView: View {
     let url: URL
     @State private var isLoading = true
     @State private var loadError: Error?
+    @State private var pdfDocument: PDFDocument?
     
     var body: some View {
         ZStack {
-            PDFKitRepresentedView(url: url, isLoading: $isLoading, loadError: $loadError)
-                .opacity(isLoading ? 0 : 1)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if let document = pdfDocument {
+                PDFKitRepresentedView(document: document)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
             
             if isLoading {
                 ProgressView()
@@ -36,59 +38,60 @@ struct PDFKitView: View {
                 }
             }
         }
+        .onAppear {
+            loadPDF()
+        }
+    }
+    
+    private func loadPDF() {
+        isLoading = true
+        
+        // Load PDF in background
+        DispatchQueue.global(qos: .userInitiated).async {
+            let document = PDFDocument(url: url)
+            
+            // Update UI on main thread
+            DispatchQueue.main.async {
+                if let document = document {
+                    self.pdfDocument = document
+                } else {
+                    self.loadError = NSError(domain: "PDFKitView", code: -1,
+                                          userInfo: [NSLocalizedDescriptionKey: "Could not load PDF"])
+                }
+                self.isLoading = false
+            }
+        }
     }
 }
 
 #if os(macOS)
 struct PDFKitRepresentedView: NSViewRepresentable {
-    let url: URL
-    @Binding var isLoading: Bool
-    @Binding var loadError: Error?
+    let document: PDFDocument
     
     func makeNSView(context: Context) -> PDFKit.PDFView {
         let pdfView = PDFKit.PDFView()
         pdfView.autoScales = true
-        pdfView.backgroundColor = .clear
+        pdfView.document = document
         return pdfView
     }
     
     func updateNSView(_ pdfView: PDFKit.PDFView, context: Context) {
-        loadPDF(into: pdfView)
+        pdfView.document = document
     }
 }
 #else
 struct PDFKitRepresentedView: UIViewRepresentable {
-    let url: URL
-    @Binding var isLoading: Bool
-    @Binding var loadError: Error?
+    let document: PDFDocument
     
     func makeUIView(context: Context) -> PDFKit.PDFView {
         let pdfView = PDFKit.PDFView()
         pdfView.autoScales = true
+        pdfView.document = document
         return pdfView
     }
     
     func updateUIView(_ pdfView: PDFKit.PDFView, context: Context) {
-        loadPDF(into: pdfView)
+        pdfView.document = document
     }
 }
 #endif
-
-extension PDFKitRepresentedView {
-    private func loadPDF(into pdfView: PDFKit.PDFView) {
-        Task { @MainActor in
-            do {
-                try await Task.sleep(nanoseconds: 1) // Ensure view is ready
-                guard let document = PDFDocument(url: url) else {
-                    loadError = NSError(domain: "PDFKitView", code: -1, 
-                                     userInfo: [NSLocalizedDescriptionKey: "Could not load PDF"])
-                    return
-                }
-                pdfView.document = document
-            } catch {
-                loadError = error
-            }
-            isLoading = false
-        }
-    }
-}

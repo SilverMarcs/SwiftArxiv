@@ -16,7 +16,7 @@ struct ArticleDetailView: View {
         return formatter
     }()
     
-    @Environment(\.colorScheme) var colorScheme
+    @State private var invertColors = false
     
     var body: some View {
         NavigationStack {
@@ -33,20 +33,20 @@ struct ArticleDetailView: View {
                             if let pdfUrl = article.pdfUrl {
                                 NavigationLink {
                                     PDFKitView(url: pdfUrl)
-                                        .if(colorScheme == .dark) {
+                                        .if(invertColors) {
                                             $0.colorInvert()
+                                        }
+                                        .toolbar {
+                                            ToolbarItem {
+                                                Button {
+                                                    invertColors.toggle()
+                                                } label: {
+                                                    Image(systemName: (invertColors ? "sun.min.fill" : "moon.fill"))
+                                                }
+                                            }
                                         }
                                         .navigationTitle("PDF Preview")
                                         .toolbarTitleDisplayMode(.inline)
-                                        .toolbar {
-//                                            ToolbarItem {
-                                                
-                                            
-                                                Link(destination: pdfUrl) {
-                                                    Image(systemName: "safari")
-                                                }
-//                                            }
-                                        }
                                 } label: {
                                     Label("PDF", systemImage: "doc.text.fill")
                                 }

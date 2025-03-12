@@ -13,10 +13,22 @@ struct ContentView: View {
     
     var body: some View {
         NavigationSplitView {
-            List(model.articles, id: \.self, selection: $model.selectedArticle) { article in
-                ArticleRowView(article: article)
+            List(selection: $model.selectedArticle) {
+                if model.isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .controlSize(.large)
+                            .padding()
+                        Spacer()
+                    }
+                } else {
+                    ForEach(model.articles, id: \.self) { article in
+                        ArticleRowView(article: article)
+                    }
+                }
             }
-            .padding(.top, 5)
+            .padding(.top, 10)
             .navigationTitle("arXiv Search")
         } detail: {
             if let selectedArticle = model.selectedArticle {
@@ -27,15 +39,21 @@ struct ContentView: View {
                 } description: {
                     Text("Select an article to view details")
                 }
+                .toolbarBackground(.hidden)
             }
         }
+        .background(.background)
         .searchable(text: $model.searchQuery, placement: .sidebar, prompt: "Search arXiv papers")
         .onSubmit(of: .search) {
             Task {
                 await model.searchArticles()
             }
         }
-        .alert("Error", isPresented: .init(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+        .alert("Error", isPresented: .init(
+                get: { model.errorMessage != nil},
+                set: { if !$0 { model.errorMessage = nil } }
+            )
+        ) {
             Button("OK") {
                 model.errorMessage = nil
             }
