@@ -11,6 +11,11 @@ import SwiftData
 struct ArticleRowView: View {
     let article: Article
     @Environment(\.modelContext) private var modelContext
+    @Query private var savedArticles: [Article]
+    
+    private var isArticleSaved: Bool {
+        savedArticles.contains { $0.id == article.id }
+    }
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -19,13 +24,24 @@ struct ArticleRowView: View {
                 .lineLimit(2)
         }
         .padding(.vertical, 4)
-        .swipeActions(edge: .trailing) {
-            Button {
-                modelContext.insert(article)
-            } label: {
-                Label("Save", systemImage: "bookmark.fill")
+        .swipeActions(edge: .leading) {
+            if !isArticleSaved {
+                Button {
+                    modelContext.insert(article)
+                } label: {
+                    Label("Save", systemImage: "bookmark.fill")
+                }
+                .tint(.blue)
             }
-            .tint(.blue)
+        }
+        .swipeActions(edge: .trailing) {
+            if isArticleSaved {
+                Button(role: .destructive) {
+                    modelContext.delete(article)
+                } label: {
+                    Label("Delete", systemImage: "trash.fill")
+                }
+            }
         }
     }
 }
