@@ -16,6 +16,7 @@ struct ContentView: View {
             List(model.articles, id: \.self, selection: $model.selectedArticle) { article in
                 ArticleRowView(article: article)
             }
+            .padding(.top, 5)
             .navigationTitle("arXiv Search")
         } detail: {
             if let selectedArticle = model.selectedArticle {
