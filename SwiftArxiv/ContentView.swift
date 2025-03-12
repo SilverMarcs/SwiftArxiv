@@ -28,7 +28,6 @@ struct ContentView: View {
                     }
                 }
             }
-            .padding(.top, 10)
             .navigationTitle("arXiv Search")
         } detail: {
             if let selectedArticle = model.selectedArticle {

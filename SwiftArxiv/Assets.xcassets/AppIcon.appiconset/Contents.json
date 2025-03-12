@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "a696cb972dc0c470389cb82013f99cb3_1723096150057_1024x1024x32.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -73,6 +74,7 @@
       "size" : "512x512"
     },
     {
+      "filename" : "a696cb972dc0c470389cb82013f99cb3_1723096150057_1024x1024x32 1.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
