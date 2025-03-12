@@ -9,58 +9,44 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @State private var model = ArxivSearchModel()
+    
     var body: some View {
         NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+            List(model.articles, id: \.self, selection: $model.selectedArticle) { article in
+                ArticleRowView(article: article)
             }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
+            .navigationTitle("arXiv Search")
         } detail: {
-            Text("Select an item")
+            if let selectedArticle = model.selectedArticle {
+                ArticleDetailView(article: selectedArticle)
+            } else {
+                ContentUnavailableView {
+                    Label("No Selection", systemImage: "doc.text")
+                } description: {
+                    Text("Select an article to view details")
+                }
+            }
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+        .searchable(text: $model.searchQuery, placement: .sidebar, prompt: "Search arXiv papers")
+        .onSubmit(of: .search) {
+            Task {
+                await model.searchArticles()
+            }
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        .alert("Error", isPresented: .init(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+            Button("OK") {
+                model.errorMessage = nil
+            }
+        } message: {
+            if let errorMessage = model.errorMessage {
+                Text(errorMessage)
             }
         }
     }
 }
 
+
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
