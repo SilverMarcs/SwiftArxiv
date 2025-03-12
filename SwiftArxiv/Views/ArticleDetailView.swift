@@ -10,6 +10,9 @@ import SwiftUI
 struct ArticleDetailView: View {
     let article: Article
     @State private var isDownloadingPDF = false
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+    @State private var alertTitle = ""
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -28,29 +31,8 @@ struct ArticleDetailView: View {
                             .font(.title)
                             .fontWeight(.bold)
                         
-                        // Action buttons
+                        // Action buttons (non-PDF ones)
                         HStack(spacing: 12) {
-                            if let pdfUrl = article.pdfUrl {
-                                Button {
-                                    downloadAndOpenPDF(from: pdfUrl)
-                                } label: {
-                                    if isDownloadingPDF {
-                                        Label("Downloading...", systemImage: "arrow.down.circle")
-                                    } else {
-                                        Label("PDF", systemImage: "doc.text.fill")
-                                    }
-                                }
-                                .disabled(isDownloadingPDF)
-                                
-                                NavigationLink {
-                                    PDFViewerView(url: pdfUrl)
-                                        .navigationTitle("PDF Preview")
-                                        .toolbarTitleDisplayMode(.inline)
-                                } label: {
-                                    Label("Preview", systemImage: "eye.fill")
-                                }
-                            }
-                            
                             if let htmlUrl = article.htmlUrl {
                                 Link(destination: htmlUrl) {
                                     Label("Web", systemImage: "safari.fill")
@@ -169,41 +151,143 @@ struct ArticleDetailView: View {
                 }
                 .padding()
             }
+            .toolbar {
+                if let pdfUrl = article.pdfUrl {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Group {
+                            Button {
+                                downloadAndOpenPDF(from: pdfUrl)
+                            } label: {
+                                if isDownloadingPDF {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Label("Open in Preview", systemImage: "doc.text.fill")
+                                        .labelStyle(.titleOnly)
+                                }
+                            }
+                            .disabled(isDownloadingPDF)
+                            
+                            Button {
+                                downloadPDFToDownloads(from: pdfUrl)
+                            } label: {
+                                if isDownloadingPDF {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Label("Download", systemImage: "arrow.down.circle")
+                                }
+                            }
+                            .disabled(isDownloadingPDF)
+                        }
+                        
+                        NavigationLink {
+                            PDFViewerView(url: pdfUrl)
+                                .navigationTitle("PDF Preview")
+                                .toolbarTitleDisplayMode(.inline)
+                        } label: {
+                            Image(systemName: "eye.fill")
+                        }
+                        .help("Preview PDF")
+                    }
+                }
+            }
         }
         .background(.background)
         .scrollContentBackground(.visible)
+        .alert(alertTitle, isPresented: $showingAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
+    }
+    
+    private func sanitizeFilename(_ filename: String) -> String {
+        // Replace characters that are problematic in filenames
+        let invalidCharacters = CharacterSet(charactersIn: ":/\\?%*|\"<>")
+        return filename.components(separatedBy: invalidCharacters)
+            .joined(separator: "-")
+            .trimmingCharacters(in: .whitespaces)
+    }
+    
+    private func getUniqueFilename(baseURL: URL, filename: String, extension: String) -> URL {
+        var finalURL = baseURL.appendingPathComponent(filename).appendingPathExtension(`extension`)
+        var counter = 1
+        
+        while FileManager.default.fileExists(atPath: finalURL.path) {
+            let newFilename = "\(filename) (\(counter))"
+            finalURL = baseURL.appendingPathComponent(newFilename).appendingPathExtension(`extension`)
+            counter += 1
+        }
+        
+        return finalURL
+    }
+    
+    private func downloadPDFToDownloads(from url: URL) {
+        isDownloadingPDF = true
+        
+        // Get Downloads directory
+        let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+        let sanitizedTitle = sanitizeFilename(article.title)
+        let destination = getUniqueFilename(baseURL: downloadsURL, filename: sanitizedTitle, extension: "pdf")
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            DispatchQueue.main.async {
+                self.isDownloadingPDF = false
+                
+                if let error = error {
+                    self.alertTitle = "Download Failed"
+                    self.alertMessage = error.localizedDescription
+                    self.showingAlert = true
+                    return
+                }
+                
+                if let data = data {
+                    do {
+                        try data.write(to: destination)
+                        self.alertTitle = "Download Complete"
+                        self.alertMessage = "PDF has been saved to Downloads folder"
+                        self.showingAlert = true
+                    } catch {
+                        self.alertTitle = "Save Failed"
+                        self.alertMessage = error.localizedDescription
+                        self.showingAlert = true
+                    }
+                }
+            }
+        }.resume()
     }
     
     private func downloadAndOpenPDF(from url: URL) {
         isDownloadingPDF = true
         
+        let sanitizedTitle = sanitizeFilename(article.title)
         let destination = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
+            .appendingPathComponent(sanitizedTitle)
             .appendingPathExtension("pdf")
         
         URLSession.shared.dataTask(with: url) { data, response, error in
-            defer { isDownloadingPDF = false }
-            
-            if let data = data {
-                do {
-                    try data.write(to: destination)
-                    DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                self.isDownloadingPDF = false
+                
+                if let error = error {
+                    self.alertTitle = "Download Failed"
+                    self.alertMessage = error.localizedDescription
+                    self.showingAlert = true
+                    return
+                }
+                
+                if let data = data {
+                    do {
+                        try data.write(to: destination)
                         NSWorkspace.shared.open(destination)
+                    } catch {
+                        self.alertTitle = "Save Failed"
+                        self.alertMessage = error.localizedDescription
+                        self.showingAlert = true
                     }
-                } catch {
-                    print("Error saving PDF: \(error)")
                 }
             }
         }.resume()
-    }
-}
-
-extension View {
-    func `if`<Content: View>(_ conditional: Bool, content: (Self) -> Content) -> TupleView<(Self?, Content?)> {
-        if conditional {
-            return TupleView((nil, content(self)))
-        } else {
-            return TupleView((self, nil))
-        }
     }
 }
