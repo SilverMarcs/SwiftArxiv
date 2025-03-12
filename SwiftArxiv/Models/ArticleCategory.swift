@@ -29,7 +29,7 @@ enum ArticleCategory: String {
     var iconName: String {
         switch self {
         case .computerScience:
-            return "desktopcomputer"
+            return "laptopcomputer"
         case .economics:
             return "chart.line.uptrend.xyaxis"
         case .electricalEngineering:
@@ -46,13 +46,13 @@ enum ArticleCategory: String {
     var color: Color {
         switch self {
         case .computerScience:
-            return .accentColor
+            return .indigo
         case .economics:
             return .green
         case .electricalEngineering:
             return .yellow
         case .mathematics:
-            return .purple
+            return .red
         case .statistics:
             return .orange
         case .other:
