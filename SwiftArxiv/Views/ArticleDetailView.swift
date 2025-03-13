@@ -72,6 +72,11 @@ struct ArticleDetailView: View {
                             }
                         }
                         
+                        if article.updated == nil {
+                            Divider()
+                        }
+                            
+                        
                         if let updated = article.updated, updated != article.published {
                             HStack {
                                 Label("Updated", systemImage: "calendar.badge.clock")
@@ -81,6 +86,10 @@ struct ArticleDetailView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
+                        }
+                        
+                        if article.updated != nil {
+                            Divider()
                         }
                     }
                     

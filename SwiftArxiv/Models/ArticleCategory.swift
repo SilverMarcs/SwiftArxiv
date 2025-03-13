@@ -46,7 +46,7 @@ enum ArticleCategory: String {
     var color: Color {
         switch self {
         case .computerScience:
-            return .indigo
+            return .blue
         case .economics:
             return .green
         case .electricalEngineering:

@@ -28,7 +28,7 @@ struct ArticleRowView: View {
         Label {
             Text(article.title)
                 .font(.body)
-                .lineLimit(2)
+//                .lineLimit(2)
         } icon: {
             Image(systemName: categoryIcon.iconName)
                 .foregroundStyle(categoryIcon.color)

@@ -29,7 +29,11 @@ struct ArticleListView: View {
                         Spacer()
                     }
                 } else if searchedArticles.isEmpty {
-                    ContentUnavailableView.search
+                    ContentUnavailableView {
+                        Label("No Results", systemImage: "magnifyingglass")
+                    } description: {
+                        Text("No papers found")
+                    }
                 } else {
                     ForEach(searchedArticles, id: \.self) { article in
                         ArticleRowView(article: article)

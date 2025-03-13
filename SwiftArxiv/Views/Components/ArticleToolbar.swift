@@ -33,6 +33,9 @@ struct ArticleToolbar: ToolbarContent {
             .disabled(isSummarizing)
             .help("Summarize paper using AI")
             
+            Capsule().fill(.quaternary).frame(width: 1.0)
+                .frame(height: 18)
+            
             if let htmlUrl = article.htmlUrl {
                 Link(destination: htmlUrl) {
                     Label("Web", systemImage: "safari")
