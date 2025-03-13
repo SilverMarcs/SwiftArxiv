@@ -14,9 +14,25 @@
 		08DB2AA12D80EE9400BA4C7D /* SwiftArxiv.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftArxiv.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		08FC28E82D837A2000B0F552 /* Exceptions for "SwiftArxiv" folder in "SwiftArxiv" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			platformFiltersByRelativePath = {
+				Views/CustomSearch.swift = (macos, );
+			};
+			target = 08DB2AA02D80EE9400BA4C7D /* SwiftArxiv */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		08DB2AA32D80EE9400BA4C7D /* SwiftArxiv */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				08FC28E82D837A2000B0F552 /* Exceptions for "SwiftArxiv" folder in "SwiftArxiv" target */,
+			);
 			path = SwiftArxiv;
 			sourceTree = "<group>";
 		};

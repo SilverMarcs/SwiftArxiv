@@ -29,8 +29,10 @@ struct SwiftArxivApp: App {
         }
         .modelContainer(sharedModelContainer)
         
+        #if os(macOS)
         Settings {
             SettingsView()
         }
+        #endif
     }
 }

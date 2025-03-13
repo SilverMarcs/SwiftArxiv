@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AppKit
+//import AppKit
 
 class PDFHandlerService {
     enum PDFError: LocalizedError {
@@ -40,6 +40,11 @@ class PDFHandlerService {
         
         let (data, _) = try await URLSession.shared.data(from: url)
         try data.write(to: destination)
+        #if os(macOS)
         NSWorkspace.shared.open(destination)
+        #else
+        // how to open file in ios?
+        // open file in ios
+        #endif
     }
 }
