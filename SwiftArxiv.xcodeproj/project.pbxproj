@@ -22,6 +22,8 @@
 			);
 			platformFiltersByRelativePath = {
 				Views/CustomSearch.swift = (macos, );
+				Views/iOSContentView.swift = (ios, xros, );
+				Views/macOSContentView.swift = (macos, );
 			};
 			target = 08DB2AA02D80EE9400BA4C7D /* SwiftArxiv */;
 		};
